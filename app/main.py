@@ -631,9 +631,11 @@ def run_job(job_id: str):
 
         build_pdf(images, pdf_path)
         size = pdf_path.stat().st_size
+        npages = len(images)
+        plural = "" if npages == 1 else "s"
         with _lock:
             job.update(status="done", finished=time.time(), progress=100,
-                       message=f"Done, {len(images)} pages / {size/1048576:.1f} MB",
+                       message=f"Done, {npages} page{plural} / {size/1048576:.1f} MB",
                        pdf=pdf_path.name, size=size, files=len(images))
     except Exception as e:
         with _lock:
