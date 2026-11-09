@@ -1,0 +1,18 @@
+[Unit]
+Description=E-Hentai to PDF web app
+After=network-online.target mihomo.service
+Wants=mihomo.service
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/manga
+Environment=MANGA_HOME=/opt/manga
+Environment=MANGA_PROXY=http://127.0.0.1:7890
+Environment=MIHOMO_API=http://127.0.0.1:9090
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/manga/venv/bin/uvicorn main:app --app-dir /opt/manga/app --host 127.0.0.1 --port 8099
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

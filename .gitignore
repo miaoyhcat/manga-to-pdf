@@ -1,0 +1,11 @@
+﻿__pycache__/
+*.pyc
+venv/
+.venv/
+data/
+config/cookies.txt
+config/pixiv_cookies.txt
+alert.env
+*.log
+*.pdf
+.DS_Store
