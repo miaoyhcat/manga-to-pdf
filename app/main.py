@@ -849,6 +849,7 @@ details summary{cursor:pointer;color:#9aa3b8;font-size:13px}
     <option value="en">English</option>
     <option value="zh">中文</option>
     <option value="ja">日本語</option>
+    <option value="ko">한국어</option>
   </select>
 </div>
 <div id="banner" style="display:none"></div>
@@ -947,7 +948,7 @@ const I18N = {
     "cookie.saved": "Saved", "cookie.configured": "Configured",
     "cookie.notConfigured": "Not configured (anonymous)", "cookie.fail": "Failed: {e}",
     "stats": "Disk {disk}% · Cache {mb}/{cacheLimit} MB · Jobs {n}/{jobLimit} · Keep {days} d",
-    "notice.text": "<b>Personal use only, non-commercial.</b> Please support the official releases — buy the books and subscribe to the sites you read. This tool does not bypass paywalls, DRM or region locks. The project is incomplete (single worker, best-effort retries, three UI languages) and some features only exist on the official platforms: progress sync, comments, release notifications, account favourites, offline libraries. It is published so you can self-host your own copy, not so you can crowd someone else's instance."
+    "notice.text": "<b>Personal use only, non-commercial.</b> Please support the official releases — buy the books and subscribe to the sites you read. This tool does not bypass paywalls, DRM or region locks. The project is incomplete (single worker, best-effort retries, four UI languages) and some features only exist on the official platforms: progress sync, comments, release notifications, account favourites, offline libraries. It is published so you can self-host your own copy, not so you can crowd someone else's instance."
   },
   zh: {
     "app.title": "本子 → PDF / 在线看",
@@ -983,7 +984,7 @@ const I18N = {
     "cookie.saved": "已保存", "cookie.configured": "已配置",
     "cookie.notConfigured": "未配置（匿名）", "cookie.fail": "失败：{e}",
     "stats": "磁盘 {disk}% · 缓存 {mb}/{cacheLimit} MB · 任务 {n}/{jobLimit} · 保留 {days} 天",
-    "notice.text": "<b>仅限自用，非商用。</b>请支持正版——买书、订阅你在用的站点。本工具不绕过付费墙、DRM 或地区限制。本项目并不完善（单任务队列、尽力而为的重试、只有三种界面语言），且部分功能只有官方平台才有：阅读进度同步、评论、更新通知、账号收藏、离线书库。开源是让你自己部署一份，不要把别人的部署当成公共服务。"
+    "notice.text": "<b>仅限自用，非商用。</b>请支持正版——买书、订阅你在用的站点。本工具不绕过付费墙、DRM 或地区限制。本项目并不完善（单任务队列、尽力而为的重试、只有四种界面语言），且部分功能只有官方平台才有：阅读进度同步、评论、更新通知、账号收藏、离线书库。开源是让你自己部署一份，不要把别人的部署当成公共服务。"
   },
   ja: {
     "app.title": "漫画 → PDF・オンライン閲覧",
@@ -1019,16 +1020,52 @@ const I18N = {
     "cookie.saved": "保存しました", "cookie.configured": "設定済み",
     "cookie.notConfigured": "未設定（匿名）", "cookie.fail": "失敗: {e}",
     "stats": "ディスク {disk}% · キャッシュ {mb}/{cacheLimit} MB · タスク {n}/{jobLimit} · 保持 {days} 日",
-    "notice.text": "<b>個人利用のみ・非商用。</b>公式のリリースを応援してください。作品を購入し、利用するサイトに課金してください。本ツールは課金・DRM・地域制限を回避しません。本プロジェクトは未完成で（ワーカー 1 本、ベストエフォートのリトライ、UI は 3 言語のみ）、一部の機能は公式のみです：読書進捗の同期、コメント、更新通知、アカウント連携のお気に入り、オフライン書庫。公開の目的は自分のコピーを動かすことであり、他者のデプロイを公共サービスとして扱うことではありません。"
+    "notice.text": "<b>個人利用のみ・非商用。</b>公式のリリースを応援してください。作品を購入し、利用するサイトに課金してください。本ツールは課金・DRM・地域制限を回避しません。本プロジェクトは未完成で（ワーカー 1 本、ベストエフォートのリトライ、UI は 4 言語のみ）、一部の機能は公式のみです：読書進捗の同期、コメント、更新通知、アカウント連携のお気に入り、オフライン書庫。公開の目的は自分のコピーを動かすことであり、他者のデプロイを公共サービスとして扱うことではありません。"
+  },
+  ko: {
+    "app.title": "만화 → PDF & 리더",
+    "app.sub": "링크나 ID를 붙여넣으세요. 지원: E-Hentai, JM (18comic), Pixiv.",
+    "tab.download": "다운로드 / PDF",
+    "tab.search": "검색",
+    "field.input": "링크 또는 ID",
+    "ph.input": "e-hentai 링크 / jm1454202 / pixiv151885064",
+    "ph.search": "작품명 또는 작가명 (예: frieren)",
+    "opt.original": "원본 이미지 받기 (느리고 용량 큼)",
+    "btn.generate": "PDF 만들기",
+    "btn.refresh": "새로고침",
+    "btn.search": "검색",
+    "btn.saveCookie": "쿠키 저장",
+    "pf.jm": "JM (18comic)",
+    "pf.eh": "E-Hentai",
+    "pf.pixiv": "Pixiv",
+    "by.title": "작품명으로",
+    "by.author": "작가명으로",
+    "job.queued": "대기 중", "job.running": "다운로드 중", "job.done": "완료",
+    "job.error": "실패", "job.canceled": "취소됨",
+    "btn.pdf": "PDF 다운로드", "btn.read": "온라인으로 읽기", "btn.cancel": "취소",
+    "search.searching": "검색 중…", "search.page": "{page} 페이지 · {n}개",
+    "search.empty": "이 페이지에는 결과가 없습니다", "search.failed": "검색 실패: {e}",
+    "search.prev": "이전", "search.next": "다음", "search.pageN": "{n} 페이지",
+    "msg.submitting": "전송 중…", "msg.queued": "대기열에 추가됨",
+    "msg.submitFail": "전송 실패: {e}",
+    "msg.offline": "백엔드에 연결할 수 없습니다: {e}",
+    "msg.empty": "아직 작업이 없습니다",
+    "cookie.title": "로그인 쿠키 (선택 — ExHentai / 높은 할당량)",
+    "cookie.igneous": "igneous (ExHentai 전용)",
+    "cookie.hint": "브라우저에서 e-hentai 로그인 → F12 → Application → Cookies 에서 세 값을 복사하세요.",
+    "cookie.saved": "저장됨", "cookie.configured": "설정됨",
+    "cookie.notConfigured": "설정 안 됨 (익명)", "cookie.fail": "실패: {e}",
+    "stats": "디스크 {disk}% · 캐시 {mb}/{cacheLimit} MB · 작업 {n}/{jobLimit} · 보관 {days}일",
+    "notice.text": "<b>개인용, 비상업적.</b> 정식 발매를 응원해 주세요 — 책을 구매하고 이용하는 사이트를 구독하세요. 이 도구는 유료 결제·DRM·지역 제한을 우회하지 않습니다. 프로젝트는 미완성이고(단일 워커, 최선 노력 재시도, UI 네 개 언어), 일부 기능은 공식 플랫폼에만 있습니다: 진행률 동기화, 댓글, 업데이트 알림, 계정 즐겨찾기, 오프라인 서재. 공개 목적은 직접 배포하는 것이며, 남의 인스턴스를 공공 서비스처럼 쓰는 것이 아닙니다."
   }
 };
 
-const SUPPORTED = ["en", "zh", "ja"];
+const SUPPORTED = ["en", "zh", "ja", "ko"];
 let LANG = "en";
 try {
   const saved = localStorage.getItem("lang");
   const nav = (navigator.language || "en").toLowerCase();
-  const auto = nav.startsWith("zh") ? "zh" : (nav.startsWith("ja") ? "ja" : "en");
+  const auto = nav.startsWith("zh") ? "zh" : (nav.startsWith("ja") ? "ja" : (nav.startsWith("ko") ? "ko" : "en"));
   // ?lang=en in the URL wins, so links can pin a language
   let q = "";
   try { q = new URLSearchParams(location.search).get("lang") || ""; } catch (e) {}
@@ -1071,7 +1108,9 @@ const u = p => {
 };
 const api = (p, opt) => fetch(p, opt).then(r => r.json());
 const esc = s => (s || "").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt = t2 => t2 ? new Date(t2*1000).toLocaleString(LANG === "zh" ? "zh-CN" : (LANG === "ja" ? "ja-JP" : "en-US"), {hour12:false}) : "";
+const fmt = t2 => t2 ? new Date(t2*1000).toLocaleString(
+  LANG === "zh" ? "zh-CN" : LANG === "ja" ? "ja-JP" : LANG === "ko" ? "ko-KR" : "en-US",
+  {hour12: false}) : "";
 
 document.querySelectorAll('.tab').forEach(el => el.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));

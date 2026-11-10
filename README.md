@@ -9,7 +9,7 @@
 > respect their terms. This tool does **not** bypass paywalls, DRM, subscriptions or region
 > locks — if a work is paid or restricted, use the official platform.
 >
-> **It is incomplete.** Single worker, best-effort retries, three UI languages, manual testing.
+> **It is incomplete.** Single worker, best-effort retries, four UI languages, manual testing.
 > Expect breakage when sites change.
 >
 > **Some features only exist upstream.** Reading-progress sync, comments, release notifications,
@@ -183,6 +183,7 @@ in the inline script makes the whole page silently do nothing, which Python cann
 - [English](README.md) (primary)
 - [简体中文](README.zh-CN.md)
 - [日本語](README.ja.md)
+- [한국어](README.ko.md)
 
 ## License
 
