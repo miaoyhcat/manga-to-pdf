@@ -833,6 +833,9 @@ details summary{cursor:pointer;color:#9aa3b8;font-size:13px}
 #banner{background:#3a1620;border:1px solid #7f1d1d;color:#fca5a5;border-radius:10px;
  padding:10px 14px;margin-bottom:14px;font-size:13px}
 #stats{font-size:12px;color:#5f6779;margin-top:10px;text-align:center}
+#notice{margin-top:22px;padding:12px 14px;border:1px solid #2a2f3d;border-radius:10px;
+ background:#14161c;color:#6f778a;font-size:11.5px;line-height:1.7}
+#notice b{color:#9aa3b8;font-weight:600}
 .pagebar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:12px;font-size:13px;color:#8b93a7}
 .pagebar button{padding:6px 14px;font-size:13px}
 .pagebar button:disabled{opacity:.4;cursor:default}
@@ -892,6 +895,7 @@ details summary{cursor:pointer;color:#9aa3b8;font-size:13px}
 
 <div id="list"></div>
 <div id="stats"></div>
+<div id="notice" data-i18n-html="notice.text"></div>
 
 <div class="card">
   <details>
@@ -942,7 +946,8 @@ const I18N = {
     "cookie.hint": "Open e-hentai in a browser → DevTools → Application → Cookies and copy these three values.",
     "cookie.saved": "Saved", "cookie.configured": "Configured",
     "cookie.notConfigured": "Not configured (anonymous)", "cookie.fail": "Failed: {e}",
-    "stats": "Disk {disk}% · Cache {mb}/{cacheLimit} MB · Jobs {n}/{jobLimit} · Keep {days} d"
+    "stats": "Disk {disk}% · Cache {mb}/{cacheLimit} MB · Jobs {n}/{jobLimit} · Keep {days} d",
+    "notice.text": "<b>Personal use only, non-commercial.</b> Please support the official releases — buy the books and subscribe to the sites you read. This tool does not bypass paywalls, DRM or region locks. The project is incomplete (single worker, best-effort retries, three UI languages) and some features only exist on the official platforms: progress sync, comments, release notifications, account favourites, offline libraries. It is published so you can self-host your own copy, not so you can crowd someone else's instance."
   },
   zh: {
     "app.title": "本子 → PDF / 在线看",
@@ -977,7 +982,8 @@ const I18N = {
     "cookie.hint": "浏览器登录 e-hentai 后，F12 → Application → Cookies 里可复制这三项。",
     "cookie.saved": "已保存", "cookie.configured": "已配置",
     "cookie.notConfigured": "未配置（匿名）", "cookie.fail": "失败：{e}",
-    "stats": "磁盘 {disk}% · 缓存 {mb}/{cacheLimit} MB · 任务 {n}/{jobLimit} · 保留 {days} 天"
+    "stats": "磁盘 {disk}% · 缓存 {mb}/{cacheLimit} MB · 任务 {n}/{jobLimit} · 保留 {days} 天",
+    "notice.text": "<b>仅限自用，非商用。</b>请支持正版——买书、订阅你在用的站点。本工具不绕过付费墙、DRM 或地区限制。本项目并不完善（单任务队列、尽力而为的重试、只有三种界面语言），且部分功能只有官方平台才有：阅读进度同步、评论、更新通知、账号收藏、离线书库。开源是让你自己部署一份，不要把别人的部署当成公共服务。"
   },
   ja: {
     "app.title": "漫画 → PDF・オンライン閲覧",
@@ -1012,7 +1018,8 @@ const I18N = {
     "cookie.hint": "ブラウザで e-hentai にログイン → F12 → Application → Cookies から 3 つコピー。",
     "cookie.saved": "保存しました", "cookie.configured": "設定済み",
     "cookie.notConfigured": "未設定（匿名）", "cookie.fail": "失敗: {e}",
-    "stats": "ディスク {disk}% · キャッシュ {mb}/{cacheLimit} MB · タスク {n}/{jobLimit} · 保持 {days} 日"
+    "stats": "ディスク {disk}% · キャッシュ {mb}/{cacheLimit} MB · タスク {n}/{jobLimit} · 保持 {days} 日",
+    "notice.text": "<b>個人利用のみ・非商用。</b>公式のリリースを応援してください。作品を購入し、利用するサイトに課金してください。本ツールは課金・DRM・地域制限を回避しません。本プロジェクトは未完成で（ワーカー 1 本、ベストエフォートのリトライ、UI は 3 言語のみ）、一部の機能は公式のみです：読書進捗の同期、コメント、更新通知、アカウント連携のお気に入り、オフライン書庫。公開の目的は自分のコピーを動かすことであり、他者のデプロイを公共サービスとして扱うことではありません。"
   }
 };
 
@@ -1039,6 +1046,7 @@ function applyLang(){
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll("[data-i18n-html]").forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
   const sel = document.querySelector("#lang");
   if (sel) sel.value = LANG;
 }

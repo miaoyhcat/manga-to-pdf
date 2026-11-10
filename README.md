@@ -1,5 +1,26 @@
 # manga-to-pdf
 
+> ## ⚠️ Please read before using
+>
+> **Personal use only · non-commercial.** A hobby tool for running **your own** little server.
+> It is not a service; no public instance is operated or endorsed here.
+>
+> **Please support the official releases.** Buy the books, subscribe to the sites you use, and
+> respect their terms. This tool does **not** bypass paywalls, DRM, subscriptions or region
+> locks — if a work is paid or restricted, use the official platform.
+>
+> **It is incomplete.** Single worker, best-effort retries, three UI languages, manual testing.
+> Expect breakage when sites change.
+>
+> **Some features only exist upstream.** Reading-progress sync, comments, release notifications,
+> account-bound favourites, offline libraries — none of that is here. Use the official app for
+> those.
+>
+> **Self-host it, don't crowd someone else's box.** The point of publishing this is so you can
+> run your own copy. Please don't treat an existing deployment as a public service.
+>
+> See [NOTICE.md](NOTICE.md) for the full text.
+
 Self-hosted web app that turns a gallery link (or an ID) into a **PDF**, and lets you **read it
 in the browser**. Supports **E-Hentai / ExHentai**, **JM (18comic)** and **Pixiv**.
 
