@@ -19,6 +19,8 @@
 > **Self-host it, don't crowd someone else's box.** The point of publishing this is so you can
 > run your own copy. Please don't treat an existing deployment as a public service.
 >
+> **Check your local law.** If this kind of content is prohibited in your country or region, please do not open or use this project.
+>
 > See [NOTICE.md](NOTICE.md) for the full text.
 
 Self-hosted web app that turns a gallery link (or an ID) into a **PDF**, and lets you **read it
@@ -39,7 +41,7 @@ paste link/ID → fetch images → build PDF → read online or download
 | | |
 |---|---|
 | **Sources** | E-Hentai / ExHentai, JM (18comic), Pixiv (artwork, user page) |
-| **Search** | by title or author, paginated, across every source |
+| **Search** | **unified search** — one query hits all three sources, results merged, de-duplicated across platforms and **ranked by relevance**; also per-source search, by title or author, paginated |
 | **Reader** | in-browser paged reading, works while the download is still running |
 | **Output** | PDF built with `img2pdf` (lossless for JPEG/PNG) |
 | **Storage** | automatic cleanup by age → job count → total size (oldest first) |

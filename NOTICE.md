@@ -9,6 +9,19 @@ author does not operate or endorse any public instance.
 - Do not sell it, do not run it as a paid service, do not wrap it in ads.
 - Do not use it to build a redistributable library.
 
+## Check your local law / 请先确认当地法律
+
+If this kind of content is prohibited in your country or region, **do not open or use this
+project**. Knowing and following the law where you live is your own responsibility.
+
+如果你所在的国家或地区禁止浏览此类内容，**请勿打开或使用本项目**。
+了解并遵守所在地法律是你自己的责任。
+
+お住まいの国や地域でこの種のコンテンツが禁止されている場合は、**本プロジェクトを開いたり
+使用したりしないでください**。
+
+거주하는 국가나 지역에서 이런 콘텐츠가 금지되어 있다면 **이 프로젝트를 열거나 사용하지 마세요**.
+
 ## Support the official releases / 请支持正版
 
 Buy the books. Subscribe to the sites you read on. Use the official app when one exists.

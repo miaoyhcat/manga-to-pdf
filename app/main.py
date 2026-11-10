@@ -486,6 +486,105 @@ def pixiv_search(q, by, page):
     return out
 
 
+# ---------------------------------------------------------------- 统一搜索
+def norm_title(x: str) -> str:
+    """去掉括号标签和标点，留下可比较的主体"""
+    x = (x or "").lower()
+    x = re.sub(r"\[[^\]]*\]|\([^)]*\)|（[^）]*）|【[^】]*】", " ", x)
+    x = re.sub(r"[^\w\u4e00-\u9fff]+", " ", x)
+    return re.sub(r"\s+", " ", x).strip()
+
+
+def norm_loose(x: str) -> str:
+    """只去标点，保留括号内容（EH 的作者常写在 [] 里）"""
+    x = (x or "").lower()
+    x = re.sub(r"[^\w\u4e00-\u9fff]+", " ", x)
+    return re.sub(r"\s+", " ", x).strip()
+
+
+def _bigrams(x: str):
+    if len(x) < 2:
+        return {x} if x else set()
+    return {x[i:i + 2] for i in range(len(x) - 1)}
+
+
+def _rel_one(qn: str, text: str) -> int:
+    """对同一段文字取两种规范化的较高分"""
+    return max(_score_one(qn, norm_title(text)), _score_one(qn, norm_loose(text)))
+
+
+def _score_one(qn: str, tn: str) -> int:
+    if not qn or not tn:
+        return 0
+    if qn == tn:
+        return 100
+    best = 0
+    if qn in tn:
+        # 包含查询词：越接近越像
+        best = 92 - min(25, len(tn) - len(qn))
+    qt, tt = set(qn.split()), set(tn.split())
+    if qt and tt:
+        best = max(best, int(70 * len(qt & tt) / len(qt)))
+    qb, tb = _bigrams(qn), _bigrams(tn)
+    if qb and tb:
+        best = max(best, int(75 * len(qb & tb) / len(qb)))
+    return max(0, min(99, best))
+
+
+def relevance(q: str, title: str, author: str = "") -> int:
+    """0-100 的粗相关度：标题与作者取较高分"""
+    qn = norm_title(q)
+    if not qn:
+        return 0
+    return max(_rel_one(qn, title or ""), _rel_one(qn, author or ""))
+
+
+def search_all(q: str, by: str, page: int):
+    """并行查三个平台，合并后按相关度排序，跨平台同名结果合并"""
+    found = []
+    errors = []
+
+    def run(fn, name):
+        try:
+            found.extend(fn(q, by, page))
+        except Exception as e:
+            errors.append(f"{name}: {str(e)[:80]}")
+
+    threads = [
+        threading.Thread(target=run, args=(eh_search, "EH")),
+        threading.Thread(target=run, args=(jm_search, "JM")),
+        threading.Thread(target=run, args=(pixiv_search, "Pixiv")),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    for r in found:
+        title_rel = relevance(q, r.get("title") or "")
+        if by == "author":
+            # 按作者搜索时“作者匹配”是前提，不是信息量；只用标题相似度微调排序
+            sc = 50 + min(40, title_rel * 2 // 5)
+        else:
+            sc = relevance(q, r.get("title") or "", r.get("author") or "")
+        r["score"] = sc
+
+    # 跨平台同名合并：保留分最高的那条，其余平台记在 also 里
+    merged = {}
+    for r in sorted(found, key=lambda x: -x["score"]):
+        key = norm_title(r.get("title") or "")
+        if key and key in merged:
+            other = merged[key]
+            if r["platform"] != other["platform"] and r["platform"] not in other["also"]:
+                other["also"].append(r["platform"])
+            continue
+        r["also"] = []
+        merged[key or r["id"]] = r
+
+    out = sorted(merged.values(), key=lambda x: (-x["score"], x["platform"]))
+    return out[:80], errors
+
+
 # ---------------------------------------------------------------- Job execution
 def run_eh(job, img_dir, log_path):
     url = job["input"]
@@ -836,6 +935,11 @@ details summary{cursor:pointer;color:#9aa3b8;font-size:13px}
 #notice{margin-top:22px;padding:12px 14px;border:1px solid #2a2f3d;border-radius:10px;
  background:#14161c;color:#6f778a;font-size:11.5px;line-height:1.7}
 #notice b{color:#9aa3b8;font-weight:600}
+#region{margin-top:10px;padding:9px 12px;border-left:2px solid #d2452c;border-radius:0 8px 8px 0;
+ background:#1a1512;color:#c58a76;font-size:12px;line-height:1.6}
+.score{font-size:11.5px;color:#5f6779;margin-right:9px;font-variant-numeric:tabular-nums}
+.score b{color:#8b94a8;font-weight:600}
+.tag{margin-right:7px;vertical-align:1px}
 .pagebar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:12px;font-size:13px;color:#8b93a7}
 .pagebar button{padding:6px 14px;font-size:13px}
 .pagebar button:disabled{opacity:.4;cursor:default}
@@ -876,6 +980,7 @@ details summary{cursor:pointer;color:#9aa3b8;font-size:13px}
   <div class="card">
     <div class="row" style="margin-top:0">
       <select id="pf" style="flex:1;min-width:130px">
+        <option value="all" data-i18n="pf.all" selected></option>
         <option value="jm" data-i18n="pf.jm"></option>
         <option value="eh" data-i18n="pf.eh"></option>
         <option value="pixiv" data-i18n="pf.pixiv"></option>
@@ -897,6 +1002,7 @@ details summary{cursor:pointer;color:#9aa3b8;font-size:13px}
 <div id="list"></div>
 <div id="stats"></div>
 <div id="notice" data-i18n-html="notice.text"></div>
+<div id="region" data-i18n="notice.region"></div>
 
 <div class="card">
   <details>
@@ -927,6 +1033,7 @@ const I18N = {
     "btn.refresh": "Refresh",
     "btn.search": "Search",
     "btn.saveCookie": "Save cookies",
+    "pf.all": "All sources",
     "pf.jm": "JM (18comic)",
     "pf.eh": "E-Hentai",
     "pf.pixiv": "Pixiv",
@@ -948,7 +1055,8 @@ const I18N = {
     "cookie.saved": "Saved", "cookie.configured": "Configured",
     "cookie.notConfigured": "Not configured (anonymous)", "cookie.fail": "Failed: {e}",
     "stats": "Disk {disk}% · Cache {mb}/{cacheLimit} MB · Jobs {n}/{jobLimit} · Keep {days} d",
-    "notice.text": "<b>Personal use only, non-commercial.</b> Please support the official releases — buy the books and subscribe to the sites you read. This tool does not bypass paywalls, DRM or region locks. The project is incomplete (single worker, best-effort retries, four UI languages) and some features only exist on the official platforms: progress sync, comments, release notifications, account favourites, offline libraries. It is published so you can self-host your own copy, not so you can crowd someone else's instance."
+    "notice.text": "<b>Personal use only, non-commercial.</b> Please support the official releases — buy the books and subscribe to the sites you read. This tool does not bypass paywalls, DRM or region locks. The project is incomplete (single worker, best-effort retries, four UI languages) and some features only exist on the official platforms: progress sync, comments, release notifications, account favourites, offline libraries. It is published so you can self-host your own copy, not so you can crowd someone else's instance.",
+    "notice.region": "If this kind of content is prohibited in your country or region, please do not open this project."
   },
   zh: {
     "app.title": "本子 → PDF / 在线看",
@@ -963,6 +1071,7 @@ const I18N = {
     "btn.refresh": "刷新列表",
     "btn.search": "搜索",
     "btn.saveCookie": "保存 Cookie",
+    "pf.all": "全部平台",
     "pf.jm": "禁漫 JM",
     "pf.eh": "E-Hentai",
     "pf.pixiv": "Pixiv",
@@ -984,7 +1093,8 @@ const I18N = {
     "cookie.saved": "已保存", "cookie.configured": "已配置",
     "cookie.notConfigured": "未配置（匿名）", "cookie.fail": "失败：{e}",
     "stats": "磁盘 {disk}% · 缓存 {mb}/{cacheLimit} MB · 任务 {n}/{jobLimit} · 保留 {days} 天",
-    "notice.text": "<b>仅限自用，非商用。</b>请支持正版——买书、订阅你在用的站点。本工具不绕过付费墙、DRM 或地区限制。本项目并不完善（单任务队列、尽力而为的重试、只有四种界面语言），且部分功能只有官方平台才有：阅读进度同步、评论、更新通知、账号收藏、离线书库。开源是让你自己部署一份，不要把别人的部署当成公共服务。"
+    "notice.text": "<b>仅限自用，非商用。</b>请支持正版——买书、订阅你在用的站点。本工具不绕过付费墙、DRM 或地区限制。本项目并不完善（单任务队列、尽力而为的重试、只有四种界面语言），且部分功能只有官方平台才有：阅读进度同步、评论、更新通知、账号收藏、离线书库。开源是让你自己部署一份，不要把别人的部署当成公共服务。",
+    "notice.region": "如果你所在的国家或地区禁止浏览此类内容，请勿打开此项目。"
   },
   ja: {
     "app.title": "漫画 → PDF・オンライン閲覧",
@@ -999,6 +1109,7 @@ const I18N = {
     "btn.refresh": "更新",
     "btn.search": "検索",
     "btn.saveCookie": "Cookie を保存",
+    "pf.all": "全サイト",
     "pf.jm": "JM（禁漫）",
     "pf.eh": "E-Hentai",
     "pf.pixiv": "Pixiv",
@@ -1020,7 +1131,8 @@ const I18N = {
     "cookie.saved": "保存しました", "cookie.configured": "設定済み",
     "cookie.notConfigured": "未設定（匿名）", "cookie.fail": "失敗: {e}",
     "stats": "ディスク {disk}% · キャッシュ {mb}/{cacheLimit} MB · タスク {n}/{jobLimit} · 保持 {days} 日",
-    "notice.text": "<b>個人利用のみ・非商用。</b>公式のリリースを応援してください。作品を購入し、利用するサイトに課金してください。本ツールは課金・DRM・地域制限を回避しません。本プロジェクトは未完成で（ワーカー 1 本、ベストエフォートのリトライ、UI は 4 言語のみ）、一部の機能は公式のみです：読書進捗の同期、コメント、更新通知、アカウント連携のお気に入り、オフライン書庫。公開の目的は自分のコピーを動かすことであり、他者のデプロイを公共サービスとして扱うことではありません。"
+    "notice.text": "<b>個人利用のみ・非商用。</b>公式のリリースを応援してください。作品を購入し、利用するサイトに課金してください。本ツールは課金・DRM・地域制限を回避しません。本プロジェクトは未完成で（ワーカー 1 本、ベストエフォートのリトライ、UI は 4 言語のみ）、一部の機能は公式のみです：読書進捗の同期、コメント、更新通知、アカウント連携のお気に入り、オフライン書庫。公開の目的は自分のコピーを動かすことであり、他者のデプロイを公共サービスとして扱うことではありません。",
+    "notice.region": "お住まいの国や地域でこの種のコンテンツが禁止されている場合は、このプロジェクトを開かないでください。"
   },
   ko: {
     "app.title": "만화 → PDF & 리더",
@@ -1035,6 +1147,7 @@ const I18N = {
     "btn.refresh": "새로고침",
     "btn.search": "검색",
     "btn.saveCookie": "쿠키 저장",
+    "pf.all": "모든 사이트",
     "pf.jm": "JM (18comic)",
     "pf.eh": "E-Hentai",
     "pf.pixiv": "Pixiv",
@@ -1056,7 +1169,8 @@ const I18N = {
     "cookie.saved": "저장됨", "cookie.configured": "설정됨",
     "cookie.notConfigured": "설정 안 됨 (익명)", "cookie.fail": "실패: {e}",
     "stats": "디스크 {disk}% · 캐시 {mb}/{cacheLimit} MB · 작업 {n}/{jobLimit} · 보관 {days}일",
-    "notice.text": "<b>개인용, 비상업적.</b> 정식 발매를 응원해 주세요 — 책을 구매하고 이용하는 사이트를 구독하세요. 이 도구는 유료 결제·DRM·지역 제한을 우회하지 않습니다. 프로젝트는 미완성이고(단일 워커, 최선 노력 재시도, UI 네 개 언어), 일부 기능은 공식 플랫폼에만 있습니다: 진행률 동기화, 댓글, 업데이트 알림, 계정 즐겨찾기, 오프라인 서재. 공개 목적은 직접 배포하는 것이며, 남의 인스턴스를 공공 서비스처럼 쓰는 것이 아닙니다."
+    "notice.text": "<b>개인용, 비상업적.</b> 정식 발매를 응원해 주세요 — 책을 구매하고 이용하는 사이트를 구독하세요. 이 도구는 유료 결제·DRM·지역 제한을 우회하지 않습니다. 프로젝트는 미완성이고(단일 워커, 최선 노력 재시도, UI 네 개 언어), 일부 기능은 공식 플랫폼에만 있습니다: 진행률 동기화, 댓글, 업데이트 알림, 계정 즐겨찾기, 오프라인 서재. 공개 목적은 직접 배포하는 것이며, 남의 인스턴스를 공공 서비스처럼 쓰는 것이 아닙니다.",
+    "notice.region": "거주하는 국가나 지역에서 이런 콘텐츠가 금지되어 있다면 이 프로젝트를 열지 마세요."
   }
 };
 
@@ -1219,11 +1333,20 @@ async function runSearch(page){
       $('#results').style.display = 'block';
       return;
     }
-    $('#results').innerHTML = d.results.map((r, i) => `
-      <div class="res">
-        <div class="t">${esc(r.title)}<div class="meta">${esc(r.author || r.id)}</div></div>
-        <div class="a"><button class="mini" onclick="pick(${i})">${t('btn.pdf')}</button></div>
-      </div>`).join('') + `
+      const PF = {eh: 'EH', jm: 'JM', pixiv: 'PIXIV'};
+      $('#results').innerHTML = d.results.map((r, i) => {
+        const also = (r.also && r.also.length) ? ' · ' + r.also.map(x => PF[x] || x).join(' / ') : '';
+        const score = (typeof r.score === 'number')
+          ? `<span class="score">${r.score > 0 ? `<b>${r.score}</b>%` : '—'}</span>` : '';
+        return `
+        <div class="res">
+          <div class="t">
+            <span class="tag ${esc(r.platform)}">${PF[r.platform] || esc(r.platform)}</span>${esc(r.title)}
+            <div class="meta">${esc(r.author || r.id)}${also}</div>
+          </div>
+          <div class="a">${score}<button class="mini" onclick="pick(${i})">${t('btn.pdf')}</button></div>
+        </div>`;
+      }).join('') + `
       <div class="pagebar">
         <button class="ghost" onclick="runSearch(${page - 1})" ${page <= 1 ? 'disabled' : ''}>${t('search.prev')}</button>
         <span>${t('search.pageN', {n: page})}</span>
@@ -1470,11 +1593,15 @@ def download(job_id: str):
 @app.get("/api/search")
 def search(platform: str = "jm", q: str = "", by: str = "title", page: int = 1):
     q = (q or "").strip()
-    if platform not in ("eh", "jm", "pixiv"):
+    if platform not in ("eh", "jm", "pixiv", "all"):
         return {"error": f"Unsupported platform: {platform}"}
     if not q:
         return {"error": "Please enter a keyword"}
     try:
+        if platform == "all":
+            results, errors = search_all(q, by, page)
+            return {"results": results, "platform": "all", "page": page,
+                    "errors": errors}
         if platform == "eh":
             results = eh_search(q, by, page)
         elif platform == "pixiv":
