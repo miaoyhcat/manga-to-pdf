@@ -1,5 +1,7 @@
 # manga-to-pdf
 
+### [English](README.md)  ·  [简体中文](README.zh-CN.md)  ·  [日本語](README.ja.md)  ·  **한국어**
+
 갤러리 링크(또는 ID)를 **PDF**로 만들고, **브라우저에서 바로 읽을 수 있게** 해 주는
 셀프 호스팅 웹 앱입니다. **E-Hentai / ExHentai**, **JM (18comic)**, **Pixiv** 를 지원합니다.
 
@@ -23,7 +25,6 @@
 >
 > 전문은 [NOTICE.md](NOTICE.md) 를 보세요.
 
-> 언어: [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 ## 기능
 

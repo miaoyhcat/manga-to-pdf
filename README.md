@@ -1,5 +1,7 @@
 # manga-to-pdf
 
+### **English**  ·  [简体中文](README.zh-CN.md)  ·  [日本語](README.ja.md)  ·  [한국어](README.ko.md)
+
 > ## ⚠️ Please read before using
 >
 > **Personal use only · non-commercial.** A hobby tool for running **your own** little server.
@@ -179,13 +181,6 @@ python scripts/check_frontend.py app/main.py   # node --check on the inline JS
 
 `check_frontend.py` exists because the UI is served from a sub-path: a single misplaced bracket
 in the inline script makes the whole page silently do nothing, which Python cannot catch.
-
-## Languages
-
-- [English](README.md) (primary)
-- [简体中文](README.zh-CN.md)
-- [日本語](README.ja.md)
-- [한국어](README.ko.md)
 
 ## License
 

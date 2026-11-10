@@ -15,7 +15,8 @@ import time
 import traceback
 import uuid
 from pathlib import Path
-from urllib.parse import quote
+import html
+from urllib.parse import quote, urlencode
 
 import img2pdf
 import requests
@@ -281,6 +282,19 @@ _search_cache_lock = threading.Lock()
 SEARCH_TTL = 120
 
 
+def _drop_prev_page(platform: str, by: str, q: str, page: int, items):
+    """上游在结果不足一页时会把同一页重复返回（JM 尤其明显），这里用上一页缓存做差集。"""
+    if page <= 1 or not items:
+        return items
+    with _search_cache_lock:
+        prev = _search_cache.get((platform, by, q, page - 1))
+    if not prev:
+        return items
+    seen = {r.get("id") for r in prev[1]}
+    return [r for r in items if r.get("id") not in seen]
+
+
+
 def jm_search(q: str, by: str, page: int):
     key = ("jm", by, q, page)
     now = time.time()
@@ -296,6 +310,7 @@ def jm_search(q: str, by: str, page: int):
         for aid, title in list(sp.iter_id_title()):
             out.append({"platform": "jm", "id": str(aid), "title": title.strip(),
                         "url": f"https://18comic.vip/album/{aid}/"})
+        out = _drop_prev_page("jm", by, q, page, out)
     with _search_cache_lock:
         _search_cache[key] = (now, out)
         if len(_search_cache) > 200:
@@ -337,16 +352,42 @@ def eh_search(q: str, by: str, page: int):
         out = _eh_search_once(query, page)
         if not out and by == "author":
             out = _eh_search_once(q, page)
+        out = _drop_prev_page("eh", by, q, page, out)
     with _search_cache_lock:
         _search_cache[key] = (now, out)
     return out
 
 
+_EH_NEXT_CACHE = {}   # (query, page) -> 该页的 URL
+
+
+def _eh_page_url(query: str, page: int):
+    """e-hentai 的搜索翻页用的是 ?next=<gid> 令牌，不是 page=N。
+    第 N 页 = 从第 1 页连续跟随 N-1 次 next 链接，并把每页 URL 缓存下来。"""
+    if page <= 1:
+        return "https://e-hentai.org/?" + urlencode({"f_search": query})
+    key = (query, page)
+    if key in _EH_NEXT_CACHE:
+        return _EH_NEXT_CACHE[key]
+    prev = _eh_page_url(query, page - 1)
+    if not prev:
+        return None
+    r = http_get(prev)
+    if "temporarily banned" in r.text or "excessive request rate" in r.text:
+        raise RuntimeError("E-Hentai is rate-limiting this exit IP, try again later")
+    m = re.search(r'href="(https://e-hentai\.org/\?f_search=[^"]*?next=\d+)"', r.text)
+    url = html.unescape(m.group(1)) if m else None
+    _EH_NEXT_CACHE[key] = url
+    if len(_EH_NEXT_CACHE) > 300:
+        for k in list(_EH_NEXT_CACHE)[:150]:
+            _EH_NEXT_CACHE.pop(k, None)
+    return url
+
+
 def _eh_search_once(query: str, page: int):
-    params = {"f_search": query}
-    if page > 1:
-        params["page"] = page - 1
-    url = "https://e-hentai.org/?" + "&".join(f"{k}={quote(str(v))}" for k, v in params.items())
+    url = _eh_page_url(query, page)
+    if not url:
+        return []
     r = http_get(url)
     if "temporarily banned" in r.text or "excessive request rate" in r.text:
         raise RuntimeError("E-Hentai is rate-limiting this exit IP, try again later")
@@ -482,8 +523,8 @@ def pixiv_search(q, by, page):
     if by == "author":
         # Pixiv user search requires login, so filter artwork results by author name instead
         hit = [x for x in out if q.lower() in (x["author"] or "").lower()]
-        return hit or out
-    return out
+        return _drop_prev_page("pixiv", by, q, page, hit or out)
+    return _drop_prev_page("pixiv", by, q, page, out)
 
 
 # ---------------------------------------------------------------- 统一搜索
@@ -543,17 +584,20 @@ def search_all(q: str, by: str, page: int):
     """并行查三个平台，合并后按相关度排序，跨平台同名结果合并"""
     found = []
     errors = []
+    counts = {}   # platform -> (items on this page, platform page capacity)
 
-    def run(fn, name):
+    def run(fn, name, page_size):
         try:
-            found.extend(fn(q, by, page))
+            items = fn(q, by, page)
+            counts[name] = (len(items), page_size)
+            found.extend(items)
         except Exception as e:
             errors.append(f"{name}: {str(e)[:80]}")
 
     threads = [
-        threading.Thread(target=run, args=(eh_search, "EH")),
-        threading.Thread(target=run, args=(jm_search, "JM")),
-        threading.Thread(target=run, args=(pixiv_search, "Pixiv")),
+        threading.Thread(target=run, args=(eh_search, "EH", 25)),
+        threading.Thread(target=run, args=(jm_search, "JM", 80)),
+        threading.Thread(target=run, args=(pixiv_search, "Pixiv", 60)),
     ]
     for t in threads:
         t.start()
@@ -582,7 +626,9 @@ def search_all(q: str, by: str, page: int):
         merged[key or r["id"]] = r
 
     out = sorted(merged.values(), key=lambda x: (-x["score"], x["platform"]))
-    return out[:80], errors
+    # 有任一平台返回满一页，说明后面还有；否则就是最后一页
+    has_more = any(n >= cap for n, cap in counts.values())
+    return out[:80], errors, has_more
 
 
 # ---------------------------------------------------------------- Job execution
@@ -1350,7 +1396,7 @@ async function runSearch(page){
       <div class="pagebar">
         <button class="ghost" onclick="runSearch(${page - 1})" ${page <= 1 ? 'disabled' : ''}>${t('search.prev')}</button>
         <span>${t('search.pageN', {n: page})}</span>
-        <button class="ghost" onclick="runSearch(${page + 1})" ${d.results.length < 10 ? 'disabled' : ''}>${t('search.next')}</button>
+        <button class="ghost" onclick="runSearch(${page + 1})" ${((d.platform === 'all') ? !d.has_more : d.results.length < 10) ? 'disabled' : ''}>${t('search.next')}</button>
       </div>`;
     $('#results').style.display = 'block';
   } catch(e){ $('#smsg').textContent = t('search.failed', {e: String(e)}); }
@@ -1599,9 +1645,9 @@ def search(platform: str = "jm", q: str = "", by: str = "title", page: int = 1):
         return {"error": "Please enter a keyword"}
     try:
         if platform == "all":
-            results, errors = search_all(q, by, page)
+            results, errors, has_more = search_all(q, by, page)
             return {"results": results, "platform": "all", "page": page,
-                    "errors": errors}
+                    "errors": errors, "has_more": has_more}
         if platform == "eh":
             results = eh_search(q, by, page)
         elif platform == "pixiv":
