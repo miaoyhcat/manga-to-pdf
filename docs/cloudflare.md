@@ -1,4 +1,4 @@
-﻿# Cloudflare deployment
+# Cloudflare deployment
 
 The application needs a real Python process (downloaders + image pipeline), so it **cannot run
 on Cloudflare Pages or Workers**. Pages is static-only and Workers cannot spawn the binaries or

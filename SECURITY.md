@@ -1,4 +1,4 @@
-﻿# Security policy
+# Security policy
 
 ## What this project stores
 

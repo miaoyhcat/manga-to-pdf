@@ -1,4 +1,4 @@
-﻿# Contributing
+# Contributing
 
 Thanks for taking a look. Small, focused pull requests are easiest to review.
 
