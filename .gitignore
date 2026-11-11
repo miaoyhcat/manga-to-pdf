@@ -9,3 +9,6 @@ alert.env
 *.log
 *.pdf
 .DS_Store
+# node_modules for the Venera runtime (linkedom)
+app/venera/node_modules/
+app/venera/package-lock.json
